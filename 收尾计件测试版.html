@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>收尾承包计算（共通版）</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--text:#111;--muted:#6b7280;--line:#e5e7eb;--btn:#111;--btnText:#fff;--pill:#eef2ff;}
+body.dark{--bg:#0b0b0f;--card:#12121a;--text:#f5f5f7;--muted:#a1a1aa;--line:#2a2a35;--btn:#f5f5f7;--btnText:#0b0b0f;--pill:#1b1b2a;}
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text);}
+.wrap{max-width:1440px;margin:0 auto;padding:14px;}
+.grid{display:grid;grid-template-columns:540px 1fr;gap:14px;align-items:start;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.04);}
+.h{font-size:16px;font-weight:700;margin:0 0 10px 0;}
+label{font-size:13px;color:var(--muted);}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);font-size:15px;}
+.topline{display:grid;grid-template-columns:132px 1fr 84px 138px;gap:10px;}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+button{appearance:none;border:0;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:650;cursor:pointer;}
+.primary{background:var(--btn);color:var(--btnText);}
+.ghost{background:var(--card);border:1px solid var(--line);color:var(--text);}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;}
+.projects{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.proj{border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:flex-start;min-height:64px;}
+.proj.disabled{opacity:.45;background:color-mix(in srgb, var(--card) 88%, var(--bg));}
+.pname{font-size:13px;font-weight:650;line-height:1.25;}
+.psub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.2;}
+.pctl{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.pctl input[type="checkbox"]{width:20px;height:20px;}
+.pctl input[type="number"]{width:92px;}
+table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:14px;}
+th,td{padding:10px 10px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;vertical-align:top;}
+th{background:color-mix(in srgb, var(--card) 92%, var(--bg));color:var(--text);font-weight:700;}
+tr:last-child td{border-bottom:0;}
+.pill{display:inline-block;background:var(--pill);padding:2px 8px;border-radius:999px;font-size:12px;margin-left:6px;color:color-mix(in srgb, var(--text) 70%, #6366f1);}
+.mono{font-variant-numeric: tabular-nums; font-feature-settings:"tnum" 1;}
+.danger{color:#b91c1c;font-size:12px;margin-top:8px;white-space:pre-wrap;}
+details.card{padding:0;}
+details.card>summary{list-style:none;cursor:pointer;padding:14px;border-radius:16px;}
+details.card>summary::-webkit-details-marker{display:none;}
+footer{text-align:center;margin:18px 0 6px 0;font-size:11px;color:color-mix(in srgb, var(--muted) 80%, #9ca3af);}
+
+  .miniSel{padding:8px 10px;border-radius:10px;font-size:13px;}
+  .miniInp{padding:8px 10px;border-radius:10px;font-size:13px;}
+
+#name{min-width:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid">
+    <div class="left">
+      <div class="card">
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;">
+          <h3 class="h" id="storeTitle" style="margin:0;">收尾计件</h3>
+          <button class="ghost" id="btnTheme" type="button">🌙 夜间模式</button>
+        </div>
+        <div style="height:10px;"></div>
+        <div class="topline">
+          <div><label>日期</label><input id="date" type="date"/></div>
+          <div><label>人名</label><input id="name" type="text" placeholder="输入人名"/></div>
+          <div><label>组别</label><select id="group"></select></div>
+          <div>
+            <label>时间类型</label>
+            <select id="timeType">
+              <option value="weekday">周内</option>
+              <option value="weekend">周末/节假日</option>
+            </select>
+            <div style="margin-top:6px;display:flex;gap:8px;align-items:center;">
+              <input id="autoTime" type="checkbox" style="width:16px;height:16px;margin:0;" checked>
+              <span style="font-size:12px;color:var(--muted);">自动识别</span>
+            </div>
+          </div>
+        </div>
+        <div class="hint">周末默认按 周五/周六/周日 自动识别；节假日请手动切换到“周末/节假日”。</div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h3 class="h">项目</h3>
+        <div class="projects" id="projectList"></div>
+
+        <div class="actions">
+          <button class="primary" id="btnAdd" type="button">添加记录</button>
+          <button class="ghost" id="btnClear" type="button">清除数据</button>
+          <button class="ghost" id="btnExport" type="button">导出CSV</button>
+        </div>
+        <div class="danger" id="err"></div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3 class="h">个人当期总工资</h3>
+          <div class="actions" style="margin-top:10px;">
+            <input id="batchFiles" type="file" multiple accept=".csv" />
+            <button class="primary" id="btnBatch" type="button">导入并汇总</button>
+            <button class="ghost" id="btnBatchExport" type="button">导出个人汇总CSV</button>
+          </div>
+          <div class="hint mono" id="batchInfo"></div>
+          <div style="margin-top:10px;overflow:auto;">
+            <table id="batchTable">
+              <thead><tr><th>姓名</th><th class="mono">总工资</th><th class="mono">总小费</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <details class="card" style="margin-top:12px;">
+          <summary>
+            <span style="font-size:16px;font-weight:700;">门店配置</span>
+            <span class="pill">共通版</span>
+            <span style="float:right;color:var(--muted);font-size:13px;">点击展开/收起</span>
+          </summary>
+          <div style="padding:0 14px 14px 14px;border-top:1px solid var(--line);">
+            <div class="hint">导入其他门店 JSON 配置后：组别/项目/价格/备注/灰掉规则都会按门店生效。</div>
+            <div class="actions" style="margin-top:10px;">
+              <input id="cfgFile" type="file" accept=".json"/>
+              <button class="ghost" id="btnCfgExport" type="button">导出配置JSON</button>
+              <button class="ghost" id="btnCfgReset" type="button">恢复默认门店</button>
+            </div>
+            <div class="hint mono" id="cfgInfo"></div>
+
+            <hr style="border:0;border-top:1px solid var(--line);margin:12px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+              <div style="font-size:15px;font-weight:700;">一键生成新门店配置</div>
+              <span class="pill">配置生成器</span>
+            </div>
+            <div class="hint">在这里直接新增/删除组别、项目、价格。</div>
+
+            <div class="card" style="margin-top:10px;padding:12px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                  <label>门店名称</label>
+                  <input id="cfgStoreName" type="text" placeholder="例如：加拿大海底捞八店"/>
+                </div>
+                <div>
+                  <label>周末规则</label>
+                  <div style="display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+                    <label style="display:flex;gap:6px;align-items:center;color:var(--text);">
+                      <input id="cfgWeekendFri" type="checkbox" style="width:16px;height:16px;margin:0;">周五
+                    </label>
+                    <label style="display:flex;gap:6px;align-items:center;color:var(--text);">
+                      <input id="cfgWeekendSat" type="checkbox" style="width:16px;height:16px;margin:0;">周六
+                    </label>
+                    <label style="display:flex;gap:6px;align-items:center;color:var(--text);">
+                      <input id="cfgWeekendSun" type="checkbox" style="width:16px;height:16px;margin:0;">周日
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:10px;padding:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <div style="font-weight:700;">组别（桌子/工作柜/料台）</div>
+                <button class="ghost" id="btnAddGroup" type="button">+ 新增组别</button>
+              </div>
+              <div style="margin-top:10px;overflow:auto;">
+                <table id="cfgGroupsTable">
+                  <thead><tr><th>组ID</th><th>组名</th><th class="mono">桌子</th><th class="mono">工作柜</th><th class="mono">料台</th><th></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              </div>
+
+            <div class="card" style="margin-top:10px;padding:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <div style="font-weight:700;">项目（类型/顺序/备注）</div>
+                <button class="ghost" id="btnAddProject" type="button">+ 新增项目</button>
+              </div>
+              <div style="margin-top:10px;overflow:auto;">
+                <table id="cfgProjectsTable">
+                  <thead><tr><th>顺序</th><th>项目名称</th><th>类型</th><th>备注（按组，可选）</th><th></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              </div>
+
+            <div class="card" style="margin-top:10px;padding:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <div style="font-weight:700;">价格编辑（周内/周末 × 组别）</div>
+              </div>
+              <div class="actions" style="margin-top:10px;">
+                <select id="cfgPriceTime">
+                  <option value="weekday">周内</option>
+                  <option value="weekend">周末/节假日</option>
+                </select>
+                <select id="cfgPriceGroup"></select>
+                <button class="ghost" id="btnCfgPriceFillZeros" type="button">为缺失项目补0</button>
+              </div>
+              <div style="margin-top:10px;overflow:auto;max-height:420px;">
+                <table id="cfgPriceTable">
+                  <thead><tr><th>项目</th><th class="mono">工资</th><th class="mono">小费</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              </div>
+
+            <div class="actions" style="margin-top:10px;">
+              <button class="primary" id="btnApplyBuilder" type="button">应用到当前网页</button>
+              <button class="ghost" id="btnExportBuilder" type="button">导出新门店配置JSON</button>
+            </div>
+
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="right">
+      <details class="card" id="priceCard">
+        <summary>
+          <span style="font-size:16px;font-weight:700;">价格配置</span> <span class="pill">可编辑</span>
+          <span style="float:right;color:var(--muted);font-size:13px;">点击展开/收起</span>
+        </summary>
+        <div style="padding:0 14px 14px 14px;border-top:1px solid var(--line);">
+          <div class="hint">选择时间类型与组别后，可直接修改各项目的“工资/小费”。修改会自动保存到本机浏览器。</div>
+          <div class="actions" style="margin-top:10px;">
+            <select id="priceTime">
+              <option value="weekday">周内</option>
+              <option value="weekend">周末/节假日</option>
+            </select>
+            <select id="priceGroup"></select>
+            <button class="ghost" id="btnPriceReset" type="button">恢复默认</button>
+          </div>
+          <div style="margin-top:10px;overflow:auto;max-height:520px;">
+            <table id="priceTable">
+              <thead><tr><th>项目</th><th class="mono">工资</th><th class="mono">小费</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <div class="card" style="margin-top:14px;">
+        <h3 class="h">汇总</h3>
+        <div style="overflow:auto;">
+          <table id="summaryTable">
+            <thead><tr><th>日期</th><th>组别</th><th>姓名</th><th class="mono">工资</th><th class="mono">小费</th><th>明细</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="hint mono" id="totals"></div>
+        <div class="hint mono" id="groupTotals"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>built quietly by Haoshen Cai</footer>
+</div>
+
+<script>
+const DEFAULT_CONFIG = {"storeName":"加拿大海底捞八店","weekendRule":{"fri":true,"sat":true,"sun":true},"groups":[{"id":"A","name":"A组","tables":17,"cabinets":4,"stations":0},{"id":"B","name":"B组","tables":10,"cabinets":4,"stations":0},{"id":"C","name":"C组","tables":15,"cabinets":2,"stations":2},{"id":"D","name":"D组","tables":12,"cabinets":3,"stations":0}],"projects":[{"key":"踢脚线/沙发缝/抬电磁炉","type":"ratio_tables","order":1},{"key":"擦工作柜+打印机柜+柜体","type":"ratio_cabinets","order":2},{"key":"擦特定墙面","type":"check","order":3,"notesByGroup":{"A":"1号保洁柜墙面","B":"包间内部和门口墙面","C":"不做","D":"63对面墙面/回餐口过道"}},{"key":"擦水柜/冰桶/冰箱（倒垃圾和清围裙）","type":"check","order":4},{"key":"补细节","type":"ratio_tables","order":5},{"key":"补杯子","type":"ratio_tables","order":6},{"key":"补筷子/小碗/碟子/勺子","type":"ratio_tables","order":7},{"key":"擦Ipad和充电，擦账单夹","type":"ratio_tables","order":8},{"key":"擦料台","type":"check","order":9,"special":{"C":{"weekday":{"typeOverride":"check"},"weekend":{"typeOverride":"ratio_stations"}}}},{"key":"擦大桌菜架","type":"check","order":10},{"key":"宝宝椅清洁","type":"check","order":11},{"key":"补冰淇淋+生日车清洁+生日柜整理+墙面+灯牌充电","type":"check","order":12},{"key":"滤网清洁","type":"ratio_tables","order":13},{"key":"补高柜","type":"check","order":14},{"key":"额外工资","type":"money_wage","order":98},{"key":"额外小费","type":"money_tip","order":99}],"prices":{"weekday":{"A":{"踢脚线/沙发缝/抬电磁炉":{"p":12.0,"c":5.7},"擦工作柜+打印机柜+柜体":{"p":3.4,"c":1.6},"擦特定墙面":{"p":1.4,"c":0.7},"擦水柜/冰桶/冰箱（倒垃圾和清面箱）":{"p":2.3,"c":1.1},"补细节":{"p":4.3,"c":2.0},"补杯子":{"p":3.6,"c":1.7},"补筷子/小碗/碟子/勺子":{"p":4.7,"c":2.2},"擦Ipad和充电，擦账单夹":{"p":3.9,"c":1.8},"擦料台":{"p":7.1,"c":3.3},"滤网清洁":{"p":3.1,"c":1.5},"擦水柜/冰桶/冰箱（倒垃圾和清围裙）":{"p":2.3,"c":1.1}},"B":{"踢脚线/沙发缝/抬电磁炉":{"p":7.1,"c":3.3},"擦工作柜+打印机柜+柜体":{"p":3.4,"c":1.6},"擦特定墙面":{"p":2.3,"c":1.1},"补细节":{"p":1.7,"c":0.8},"补杯子":{"p":2.1,"c":1.0},"补筷子/小碗/碟子/勺子":{"p":2.3,"c":1.1},"擦Ipad和充电，擦账单夹":{"p":2.3,"c":1.1},"擦大桌菜架":{"p":3.4,"c":1.6},"滤网清洁":{"p":1.8,"c":0.9}},"C":{"踢脚线/沙发缝/抬电磁炉":{"p":10.6,"c":5.0},"擦工作柜+打印机柜+柜体":{"p":1.7,"c":0.8},"擦水柜/冰桶/冰箱（倒垃圾和清面箱）":{"p":2.3,"c":1.1},"补细节":{"p":3.8,"c":1.8},"补杯子":{"p":3.2,"c":1.5},"补筷子/小碗/碟子/勺子":{"p":3.8,"c":1.8},"擦Ipad和充电，擦账单夹":{"p":3.4,"c":1.6},"擦料台":{"p":7.1,"c":3.3},"滤网清洁":{"p":2.8,"c":1.3},"补高柜":{"p":4.3,"c":2.0},"擦水柜/冰桶/冰箱（倒垃圾和清围裙）":{"p":2.3,"c":1.1}},"D":{"踢脚线/沙发缝/抬电磁炉":{"p":8.5,"c":4.0},"擦工作柜+打印机柜+柜体":{"p":2.6,"c":1.2},"擦特定墙面":{"p":1.4,"c":0.7},"补细节":{"p":3.0,"c":1.4},"补杯子":{"p":2.6,"c":1.2},"补筷子/小碗/碟子/勺子":{"p":3.4,"c":1.6},"擦Ipad和充电，擦账单夹":{"p":2.7,"c":1.3},"宝宝椅清洁":{"p":1.7,"c":0.8},"补冰淇淋+生日车清洁+生日柜整理+墙面+灯牌充电":{"p":7.1,"c":3.3},"滤网清洁":{"p":2.2,"c":1.0}}},"weekend":{"A":{"踢脚线/沙发缝/抬电磁炉":{"p":12.0,"c":5.7},"擦工作柜+打印机柜+柜体":{"p":3.4,"c":1.6},"擦特定墙面":{"p":1.4,"c":0.7},"擦水柜/冰桶/冰箱（倒垃圾和清面箱）":{"p":2.8,"c":1.3},"补细节":{"p":6.8,"c":3.2},"补杯子":{"p":6.0,"c":2.8},"补筷子/小碗/碟子/勺子":{"p":8.2,"c":3.9},"擦Ipad和充电，擦账单夹":{"p":3.9,"c":1.8},"擦料台":{"p":7.1,"c":3.3},"滤网清洁":{"p":3.1,"c":1.5},"擦水柜/冰桶/冰箱（倒垃圾和清围裙）":{"p":2.8,"c":1.3}},"B":{"踢脚线/沙发缝/抬电磁炉":{"p":7.1,"c":3.3},"擦工作柜+打印机柜+柜体":{"p":3.4,"c":1.6},"擦特定墙面":{"p":2.8,"c":1.3},"补细节":{"p":2.7,"c":1.3},"补杯子":{"p":3.5,"c":1.7},"补筷子/小碗/碟子/勺子":{"p":4.0,"c":1.9},"擦Ipad和充电，擦账单夹":{"p":2.3,"c":1.1},"擦大桌菜架":{"p":3.4,"c":1.6},"滤网清洁":{"p":1.8,"c":0.9}},"C":{"踢脚线/沙发缝/抬电磁炉":{"p":10.6,"c":5.0},"擦工作柜+打印机柜+柜体":{"p":1.7,"c":0.8},"擦水柜/冰桶/冰箱（倒垃圾和清面箱）":{"p":2.8,"c":1.3},"补细节":{"p":6.1,"c":2.9},"补杯子":{"p":5.3,"c":2.5},"补筷子/小碗/碟子/勺子":{"p":6.7,"c":3.2},"擦Ipad和充电，擦账单夹":{"p":3.4,"c":1.6},"擦料台":{"p":12.0,"c":5.7},"滤网清洁":{"p":2.8,"c":1.3},"补高柜":{"p":9.9,"c":4.7},"擦水柜/冰桶/冰箱（倒垃圾和清围裙）":{"p":2.8,"c":1.3}},"D":{"踢脚线/沙发缝/抬电磁炉":{"p":8.5,"c":4.0},"擦工作柜+打印机柜+柜体":{"p":2.6,"c":1.2},"擦特定墙面":{"p":1.4,"c":0.7},"补细节":{"p":4.8,"c":2.2},"补杯子":{"p":4.3,"c":2.0},"补筷子/小碗/碟子/勺子":{"p":6.0,"c":2.8},"擦Ipad和充电，擦账单夹":{"p":2.7,"c":1.3},"宝宝椅清洁":{"p":2.8,"c":1.3},"补冰淇淋+生日车清洁+生日柜整理+墙面+灯牌充电":{"p":9.9,"c":4.7},"滤网清洁":{"p":2.2,"c":1.0}}}}};
+const STORAGE_KEYS = {
+  config: "aoli_common_config_v2",
+  records: "aoli_common_records_v1",
+  theme: "aoli_common_theme_v1"
+};
+const $ = (id)=>document.getElementById(id);
+const clampInt = (v)=>{const n=parseInt(v,10);return Number.isFinite(n)?Math.max(0,n):0;};
+const clampMoney = (v)=>{const n=parseFloat(v);return Number.isFinite(n)?Math.max(0,Math.round(n*100)/100):0;};
+const fmtMoney = (x)=> (Math.round(x*100)/100).toFixed(2);
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+let cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+let records = [];
+let batchAgg = [];
+let __timeTypeManuallyChanged = false;
+
+function applyTheme(mode){
+  const dark = (mode==="dark");
+  document.body.classList.toggle("dark", dark);
+  $("btnTheme").textContent = dark ? "☀️ 日间模式" : "🌙 夜间模式";
+  localStorage.setItem(STORAGE_KEYS.theme, dark ? "dark" : "light");
+}
+function toggleTheme(){
+  const cur = document.body.classList.contains("dark") ? "dark":"light";
+  applyTheme(cur==="dark"?"light":"dark");
+}
+
+function groups(){return Array.isArray(cfg.groups)?cfg.groups:[];}
+function groupById(id){return groups().find(g=>g.id===id)||null;}
+function projects(){const ps=Array.isArray(cfg.projects)?cfg.projects:[];return ps.slice().sort((a,b)=>(a.order??999)-(b.order??999));}
+function projectByKey(k){return projects().find(p=>p.key===k)||null;}
+function weekendRule(){return cfg.weekendRule||{fri:true,sat:true,sun:true};}
+function autoTimeTypeFromDate(iso){
+  if(!iso) return null;
+  const d=new Date(iso+"T00:00:00");
+  const day=d.getDay();
+  const r=weekendRule();
+  if(day===5 && r.fri) return "weekend";
+  if(day===6 && r.sat) return "weekend";
+  if(day===0 && r.sun) return "weekend";
+  return "weekday";
+}
+function maybeApplyAutoTime(){
+  if(!$("autoTime").checked) return;
+  if(__timeTypeManuallyChanged) return;
+  const t=autoTimeTypeFromDate($("date").value);
+  if(t) $("timeType").value=t;
+}
+function getProjectType(p, timeType, groupId){
+  if(p?.special?.[groupId]?.[timeType]?.typeOverride) return p.special[groupId][timeType].typeOverride;
+  return p.type||"check";
+}
+function denomFor(p, timeType, groupId){
+  const g=groupById(groupId); if(!g) return 0;
+  const t=getProjectType(p,timeType,groupId);
+  if(t==="ratio_tables") return g.tables||0;
+  if(t==="ratio_cabinets") return g.cabinets||0;
+  if(t==="ratio_stations") return g.stations||0;
+  return 0;
+}
+function getPrice(timeType, groupId, key){
+  return cfg?.prices?.[timeType]?.[groupId]?.[key] || null;
+}
+function wallNote(p, groupId){
+  return p?.notesByGroup?.[groupId] || "";
+}
+function isAvailable(p, timeType, groupId){
+  const note=String(wallNote(p,groupId)).trim();
+  if(note==="不做") return false;
+  if(p.type==="money_wage"||p.type==="money_tip") return true;
+  return !!getPrice(timeType,groupId,p.key);
+}
+function detailNameFor(key){
+  if(String(key||"").startsWith("擦Ipad和充电")) return "擦Ipad";
+  const s=String(key||"");
+  const slash=s.indexOf("/"); if(slash>0) return s.slice(0,slash);
+  const plus=s.indexOf("+"); if(plus>0) return s.slice(0,plus);
+  return s;
+}
+
+function saveCfg(){ localStorage.setItem(STORAGE_KEYS.config, JSON.stringify(cfg)); }
+function loadCfg(){
+  try{ const raw=localStorage.getItem(STORAGE_KEYS.config); if(raw) cfg=JSON.parse(raw); }catch(e){ cfg=JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
+}
+function resetCfg(){
+  if(!confirm("确定恢复默认门店配置吗？")) return;
+  cfg=JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  saveCfg();
+  renderAll();
+}
+function exportCfg(){
+  const blob=new Blob([JSON.stringify(cfg,null,2)],{type:"application/json;charset=utf-8"});
+  const a=document.createElement("a");
+  const name=(cfg.storeName||"门店配置").replace(/[\\/:*?"<>|]/g,"_");
+  a.href=URL.createObjectURL(blob); a.download=name+"_config.json"; a.click(); URL.revokeObjectURL(a.href);
+}
+async function importCfgFile(){
+  const file=$("cfgFile").files?.[0];
+  if(!file) return;
+  try{
+    const obj=JSON.parse(await file.text());
+    cfg=obj;
+    saveCfg();
+    renderAll();
+    $("cfgInfo").textContent="已导入："+(cfg.storeName||"");
+  }catch(e){ alert("配置导入失败：请确认JSON格式正确"); }
+  $("cfgFile").value="";
+}
+
+function saveRecords(){ localStorage.setItem(STORAGE_KEYS.records, JSON.stringify(records)); }
+function loadRecords(){ try{ records=JSON.parse(localStorage.getItem(STORAGE_KEYS.records)||"[]")||[]; }catch(e){ records=[]; } }
+
+function renderGroupSelects(){
+  const sel=$("group"), psel=$("priceGroup");
+  sel.innerHTML=""; psel.innerHTML="";
+  groups().forEach(g=>{
+    const o=document.createElement("option"); o.value=g.id; o.textContent=g.name||g.id; sel.appendChild(o);
+    const o2=o.cloneNode(true); psel.appendChild(o2);
+  });
+}
+function renderProjects(){
+  const t=$("timeType").value;
+  const gid=$("group").value;
+  const list=$("projectList");
+  list.innerHTML="";
+  projects().forEach(p=>{
+    const key=p.key;
+    const div=document.createElement("div");
+    div.className="proj"; div.dataset.pkey=key;
+    const available=isAvailable(p,t,gid);
+    if(!available) div.classList.add("disabled");
+    const left=document.createElement("div");
+    const pn=document.createElement("div"); pn.className="pname"; pn.textContent=key;
+    const ps=document.createElement("div"); ps.className="psub";
+    if(!available) {
+      ps.textContent="本组/时间不做";
+    } else {
+      const note=wallNote(p,gid);
+      if(note) ps.textContent=note;
+      const price=getPrice(t,gid,key);
+      if(price) {
+        const extra=ps.textContent?(ps.textContent+" · "):"";
+        ps.textContent=extra+"默认：工资 "+Number(price.p).toFixed(1)+" / 小费 "+Number(price.c).toFixed(1);
+      }
+    }
+    left.appendChild(pn); left.appendChild(ps);
+    const ctl=document.createElement("div"); ctl.className="pctl";
+    const ptype=getProjectType(p,t,gid);
+    if(ptype==="money_wage"||ptype==="money_tip") {
+      const inp=document.createElement("input");
+      inp.type="number"; inp.min="0"; inp.step="0.1"; inp.placeholder="金额"; inp.disabled=!available;
+      ctl.appendChild(inp);
+    } else {
+      const denom=denomFor(p,t,gid);
+      if(denom>0 && ptype.startsWith("ratio_")) {
+        const inp=document.createElement("input");
+        inp.type="number"; inp.min="0"; inp.step="1"; inp.placeholder="0/"+denom; inp.disabled=!available;
+        ctl.appendChild(inp);
+      } else {
+        const cb=document.createElement("input");
+        cb.type="checkbox"; cb.disabled=!available;
+        ctl.appendChild(cb);
+      }
+    }
+    div.appendChild(left); div.appendChild(ctl);
+    list.appendChild(div);
+  });
+}
+function getSelection(){
+  const t=$("timeType").value;
+  const gid=$("group").value;
+  const pmap=new Map(projects().map(p=>[p.key,p]));
+  let wage=0, tip=0; const items=[];
+  document.querySelectorAll("#projectList .proj").forEach(div=>{
+    const key=div.dataset.pkey;
+    const p=pmap.get(key); if(!p) return;
+    if(!isAvailable(p,t,gid)) return;
+    const ptype=getProjectType(p,t,gid);
+    const num=div.querySelector('input[type="number"]');
+    const cb=div.querySelector('input[type="checkbox"]');
+    if(ptype==="money_wage") {
+      const v=clampMoney(num?.value||0);
+      if(v>0) { wage+=v; items.push({k:key,qty:v,kind:"extra"}); }
+      return;
+    }
+    if(ptype==="money_tip") {
+      const v=clampMoney(num?.value||0);
+      if(v>0) { tip+=v; items.push({k:key,qty:v,kind:"extra"}); }
+      return;
+    }
+    const price=getPrice(t,gid,key); if(!price) return;
+    if(ptype.startsWith("ratio_")) {
+      const denom=denomFor(p,t,gid);
+      const done=clampInt(num?.value||0);
+      if(done<=0) return;
+      const ratio=denom>0?(done/denom):0;
+      wage += (price.p||0)*ratio;
+      tip  += (price.c||0)*ratio;
+      items.push({k:key,qty:done,kind:"num"});
+      return;
+    }
+    if(cb && cb.checked) {
+      wage += (price.p||0); tip += (price.c||0);
+      items.push({k:key,qty:1,kind:"check"});
+    }
+  });
+  return {wage,tip,items};
+}
+function renderSummary(){
+  const tb=$("summaryTable").querySelector("tbody");
+  tb.innerHTML="";
+  let totalW=0,totalT=0;
+  const gs={}; groups().forEach(g=>gs[g.id]=[0,0]);
+  records.forEach((r,idx)=>{
+    totalW+=r.wage; totalT+=r.tip;
+    if(gs[r.group]){ gs[r.group][0]+=r.wage; gs[r.group][1]+=r.tip; }
+    const details=(r.details||[]).map(d=>{
+      const name=detailNameFor(d.k);
+      if(d.kind==="check") return "1"+name;
+      return String(d.qty)+name;
+    }).join("；");
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="mono">${escapeHtml(r.date)}</td>
+      <td>${escapeHtml(groupById(r.group)?.name||r.group)}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td class="mono">${fmtMoney(r.wage)}</td>
+      <td class="mono">${fmtMoney(r.tip)}</td>
+      <td>${escapeHtml(details)}</td>
+      <td><button class="ghost" type="button" data-del="${idx}">×</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("button[data-del]").forEach(btn=>{
+    btn.onclick=()=>{ records.splice(parseInt(btn.dataset.del,10),1); saveRecords(); renderSummary(); };
+  });
+  $("totals").textContent=`当日合计：工资 ${fmtMoney(totalW)} ｜ 小费 ${fmtMoney(totalT)} ｜ 合计 ${fmtMoney(totalW+totalT)}`;
+  $("groupTotals").textContent="各组小计（工资/小费）："+groups().map(g=>`${g.id} ${fmtMoney(gs[g.id][0])}/${fmtMoney(gs[g.id][1])}`).join(" ｜ ");
+}
+function addRecord(){
+  $("err").textContent="";
+  const date=$("date").value;
+  const name=$("name").value.trim();
+  if(!date) return $("err").textContent="请选择日期";
+  if(!name) return $("err").textContent="请输入人名";
+  const sel=getSelection();
+  if(!sel.items.length) return $("err").textContent="最少选择/填写一个项目";
+  const rec={date,name,group:$("group").value,t:$("timeType").value,
+    wage:Math.round(sel.wage*100)/100, tip:Math.round(sel.tip*100)/100, details:sel.items};
+  const idx=records.findIndex(x=>x.date===rec.date && x.group===rec.group && x.t===rec.t && x.name===rec.name);
+  if(idx>=0) {
+    records[idx].wage=Math.round((records[idx].wage+rec.wage)*100)/100;
+    records[idx].tip=Math.round((records[idx].tip+rec.tip)*100)/100;
+    records[idx].details=(records[idx].details||[]).concat(rec.details||[]);
+  } else records.push(rec);
+  saveRecords();
+  document.querySelectorAll("#projectList input").forEach(inp=>{ if(inp.type==="checkbox") inp.checked=false; else inp.value=""; });
+  renderSummary();
+}
+function clearData(){ if(!confirm("确定清除全部记录吗？")) return; records=[]; saveRecords(); renderSummary(); }
+function exportCSV(){
+  if(!records.length) return alert("没有数据可导出");
+  const date=$("date").value||new Date().toISOString().slice(0,10);
+  const filename=`${date}汇总.csv`;
+  const rows=[["日期","组别","姓名","工资","小费","明细"]];
+  records.forEach(r=>{
+    const details=(r.details||[]).map(d=>{
+      const name=detailNameFor(d.k);
+      if(d.kind==="check") return "1"+name;
+      return String(d.qty)+name;
+    }).join("；");
+    rows.push([r.date,r.group,r.name,fmtMoney(r.wage),fmtMoney(r.tip),details]);
+  });
+  const csv=rows.map(r=>r.map(cell=>{ const s=String(cell??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function parseCSV(text){
+  const rows=[]; let cur=[], field="", inq=false;
+  for(let i=0;i<text.length;i++) {
+    const ch=text[i];
+    if(inq) {
+      if(ch==='"' && text[i+1]==='"') { field+='"'; i++; }
+      else if(ch==='"') inq=false;
+      else field+=ch;
+    } else {
+      if(ch==='"') inq=true;
+      else if(ch===',') { cur.push(field); field=""; }
+      else if(ch==='\n') { cur.push(field); rows.push(cur); cur=[]; field=""; }
+      else if(ch==='\r') {}
+      else field+=ch;
+    }
+  }
+  cur.push(field); rows.push(cur);
+  return rows.filter(r=>r.some(x=>String(x).trim()!==""));
+}
+function normalizeName(name){ return String(name||"").trim().toLowerCase(); }
+async function batchImport(){
+  const files=$("batchFiles").files;
+  if(!files||!files.length) return alert("请选择CSV文件");
+  const map=new Map(); let count=0;
+  for(const f of files) {
+    const text=await f.text();
+    const rows=parseCSV(text);
+    const head=rows[0].map(x=>String(x).trim());
+    const iName=head.indexOf("姓名"), iW=head.indexOf("工资"), iT=head.indexOf("小费");
+    if(iName===-1||iW===-1||iT===-1) continue;
+    for(let r=1;r<rows.length;r++) {
+      const row=rows[r];
+      const nm=String(row[iName]||"").trim();
+      if(!nm) continue;
+      const w=parseFloat(row[iW]||0)||0;
+      const t=parseFloat(row[iT]||0)||0;
+      const key=normalizeName(nm);
+      if(!map.has(key)) map.set(key,{display:nm,w:0,t:0});
+      const obj=map.get(key); obj.w+=w; obj.t+=t; count++;
+    }
+  }
+  batchAgg=[...map.values()].sort((a,b)=>a.display.localeCompare(b.display,"zh"));
+  $("batchInfo").textContent=`已汇总：${batchAgg.length} 人，读取行数约 ${count}`;
+  const tb=$("batchTable").querySelector("tbody"); tb.innerHTML="";
+  batchAgg.forEach(x=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${escapeHtml(x.display)}</td><td class="mono">${fmtMoney(x.w)}</td><td class="mono">${fmtMoney(x.t)}</td>`; tb.appendChild(tr); });
+}
+function batchExport(){
+  if(!batchAgg.length) return alert("没有个人汇总可导出");
+  const date=$("date").value||new Date().toISOString().slice(0,10);
+  const filename=`${date}个人当期总工资.csv`;
+  const rows=[["姓名","总工资","总小费"]];
+  batchAgg.forEach(x=>rows.push([x.display,fmtMoney(x.w),fmtMoney(x.t)]));
+  const csv=rows.map(r=>r.map(cell=>{ const s=String(cell??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function renderPriceTable(){
+  const t=$("priceTime").value, gid=$("priceGroup").value;
+  const tb=$("priceTable").querySelector("tbody"); tb.innerHTML="";
+  projects().forEach(p=>{
+    if(p.type==="money_wage"||p.type==="money_tip") return;
+    const price=getPrice(t,gid,p.key);
+    if(!price) return;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${escapeHtml(p.key)}</td>
+      <td class="mono"><input data-k="${escapeHtml(p.key)}" data-f="p" type="number" step="0.1" min="0" value="${price.p}"></td>
+      <td class="mono"><input data-k="${escapeHtml(p.key)}" data-f="c" type="number" step="0.1" min="0" value="${price.c}"></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("input[data-k]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const k=inp.getAttribute("data-k");
+      const f=inp.getAttribute("data-f");
+      const v=clampMoney(inp.value);
+      const t=$("priceTime").value, gid=$("priceGroup").value;
+      cfg.prices[t][gid]=cfg.prices[t][gid]||{};
+      cfg.prices[t][gid][k]=cfg.prices[t][gid][k]||{p:0,c:0};
+      cfg.prices[t][gid][k][f]=v;
+      saveCfg();
+      renderProjects();
+    });
+  });
+}
+function resetPrices(){
+  if(!confirm("确定恢复默认价格吗？")) return;
+  cfg.prices = JSON.parse(JSON.stringify(DEFAULT_CONFIG.prices));
+  saveCfg();
+  renderProjects(); renderPriceTable();
+}
+
+function renderAll(){
+  $("storeTitle").textContent=(cfg.storeName?cfg.storeName+" · ":"")+"收尾计件";
+  renderGroupSelects();
+  if(!$("group").value && groups()[0]) $("group").value=groups()[0].id;
+  maybeApplyAutoTime();
+  renderProjects();
+  renderSummary();
+  $("priceGroup").value=$("group").value;
+  $("priceTime").value=$("timeType").value;
+  renderPriceTable();
+  $("cfgInfo").textContent=`当前门店：${cfg.storeName||"未命名"}（组别 ${groups().length} 个，项目 ${projects().length} 个）`;
+}
+
+
+// ===== 配置生成器 =====
+function ensureCfgShapes(){
+  cfg.weekendRule = cfg.weekendRule || {fri:true,sat:true,sun:true};
+  cfg.groups = Array.isArray(cfg.groups)?cfg.groups:[];
+  cfg.projects = Array.isArray(cfg.projects)?cfg.projects:[];
+  cfg.prices = cfg.prices || {weekday:{}, weekend:{}};
+  cfg.prices.weekday = cfg.prices.weekday || {};
+  cfg.prices.weekend = cfg.prices.weekend || {};
+}
+
+function syncBuilderFromCfg(){
+  ensureCfgShapes();
+  $("cfgStoreName").value = cfg.storeName || "";
+  $("cfgWeekendFri").checked = !!cfg.weekendRule.fri;
+  $("cfgWeekendSat").checked = !!cfg.weekendRule.sat;
+  $("cfgWeekendSun").checked = !!cfg.weekendRule.sun;
+
+  // groups table + selector
+  renderCfgGroups();
+  renderCfgProjects();
+  renderCfgPriceGroupSel();
+  renderCfgPriceTable();
+}
+
+function renderCfgGroups(){
+  const tb = $("cfgGroupsTable").querySelector("tbody");
+  tb.innerHTML = "";
+  cfg.groups.forEach((g, idx)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input class="miniInp" data-gf="id" data-i="${idx}" value="${escapeHtml(g.id||"")}" style="width:70px;"></td>
+      <td><input class="miniInp" data-gf="name" data-i="${idx}" value="${escapeHtml(g.name||"")}" style="min-width:120px;"></td>
+      <td class="mono"><input class="miniInp" data-gf="tables" data-i="${idx}" type="number" min="0" step="1" value="${Number(g.tables||0)}" style="width:90px;"></td>
+      <td class="mono"><input class="miniInp" data-gf="cabinets" data-i="${idx}" type="number" min="0" step="1" value="${Number(g.cabinets||0)}" style="width:90px;"></td>
+      <td class="mono"><input class="miniInp" data-gf="stations" data-i="${idx}" type="number" min="0" step="1" value="${Number(g.stations||0)}" style="width:90px;"></td>
+      <td><button class="ghost" type="button" data-gdel="${idx}">删除</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll("input[data-gf]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const i = parseInt(inp.getAttribute("data-i"),10);
+      const f = inp.getAttribute("data-gf");
+      if(!cfg.groups[i]) return;
+      if(f==="tables"||f==="cabinets"||f==="stations") cfg.groups[i][f] = clampInt(inp.value);
+      else cfg.groups[i][f] = inp.value.trim();
+      renderCfgPriceGroupSel();
+    });
+  });
+  tb.querySelectorAll("button[data-gdel]").forEach(btn=>{
+    btn.onclick=()=>{
+      const i=parseInt(btn.getAttribute("data-gdel"),10);
+      const gid = cfg.groups[i]?.id;
+      cfg.groups.splice(i,1);
+      // also remove prices of that gid
+      if(gid){
+        delete cfg.prices.weekday[gid];
+        delete cfg.prices.weekend[gid];
+      }
+      renderCfgGroups();
+      renderCfgPriceGroupSel();
+      renderCfgPriceTable();
+      renderCfgProjects(); // notes by group might change
+    };
+  });
+}
+
+function renderCfgProjects(){
+  const tb = $("cfgProjectsTable").querySelector("tbody");
+  tb.innerHTML = "";
+  const typeOpts = [
+    ["check","勾选"],
+    ["ratio_tables","按桌子比例"],
+    ["ratio_cabinets","按工作柜比例"],
+    ["ratio_stations","按料台比例"],
+    ["money_wage","额外工资输入"],
+    ["money_tip","额外小费输入"]
+  ];
+  cfg.projects.slice().sort((a,b)=>(a.order??999)-(b.order??999)).forEach((p)=>{
+    const idx = cfg.projects.indexOf(p);
+    const noteParts = (cfg.groups||[]).map(g=>{
+      const val = (p.notesByGroup && p.notesByGroup[g.id]) ? p.notesByGroup[g.id] : "";
+      return `${g.id}:${val}`;
+    }).join("  ");
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono"><input class="miniInp" data-pf="order" data-i="${idx}" type="number" step="1" value="${Number(p.order||0)}" style="width:80px;"></td>
+      <td><input class="miniInp" data-pf="key" data-i="${idx}" value="${escapeHtml(p.key||"")}" style="min-width:220px;"></td>
+      <td>
+        <select class="miniSel" data-pf="type" data-i="${idx}">
+          ${typeOpts.map(([v,t])=>`<option value="${v}" ${p.type===v?"selected":""}>${t}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <input class="miniInp" data-pf="notes" data-i="${idx}" value="${escapeHtml(noteParts)}" placeholder="例：A:xxx  B:yyy  C:不做" style="min-width:260px;">
+      </td>
+      <td><button class="ghost" type="button" data-pdel="${idx}">删除</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll("input[data-pf],select[data-pf]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const i=parseInt(inp.getAttribute("data-i"),10);
+      const f=inp.getAttribute("data-pf");
+      const p=cfg.projects[i]; if(!p) return;
+      if(f==="order") p.order = clampInt(inp.value);
+      else if(f==="key") p.key = inp.value.trim();
+      else if(f==="type") p.type = inp.value;
+      else if(f==="notes"){
+        const raw = inp.value;
+        const obj = {};
+        raw.split(/\s+/).filter(Boolean).forEach(part=>{
+          const m = part.match(/^([^:：]+)[:：](.*)$/);
+          if(m) obj[m[1].trim()] = m[2].trim();
+        });
+        p.notesByGroup = obj;
+      }
+      // ensure price rows refresh when keys change
+      renderCfgPriceTable();
+    });
+  });
+
+  tb.querySelectorAll("button[data-pdel]").forEach(btn=>{
+    btn.onclick=()=>{
+      const i=parseInt(btn.getAttribute("data-pdel"),10);
+      const key=cfg.projects[i]?.key;
+      cfg.projects.splice(i,1);
+      // remove price entries for that key
+      ["weekday","weekend"].forEach(t=>{
+        Object.keys(cfg.prices[t]||{}).forEach(gid=>{
+          if(cfg.prices[t][gid]) delete cfg.prices[t][gid][key];
+        });
+      });
+      renderCfgProjects();
+      renderCfgPriceTable();
+    };
+  });
+}
+
+function renderCfgPriceGroupSel(){
+  const sel = $("cfgPriceGroup");
+  sel.innerHTML="";
+  cfg.groups.forEach(g=>{
+    const opt=document.createElement("option");
+    opt.value=g.id; opt.textContent=g.name||g.id;
+    sel.appendChild(opt);
+  });
+  if(!sel.value && cfg.groups[0]) sel.value = cfg.groups[0].id;
+}
+
+function renderCfgPriceTable(){
+  const t = $("cfgPriceTime").value;
+  const gid = $("cfgPriceGroup").value;
+  const tb = $("cfgPriceTable").querySelector("tbody");
+  tb.innerHTML="";
+  if(!gid) return;
+
+  cfg.prices[t][gid] = cfg.prices[t][gid] || {};
+  const priceObj = cfg.prices[t][gid];
+
+  const ps = cfg.projects.slice().sort((a,b)=>(a.order??999)-(b.order??999));
+  ps.forEach(p=>{
+    if(p.type==="money_wage"||p.type==="money_tip") return;
+    const key=p.key;
+    const has = priceObj[key] && typeof priceObj[key].p==="number" && typeof priceObj[key].c==="number";
+    const pval = has ? priceObj[key].p : "";
+    const cval = has ? priceObj[key].c : "";
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(key)}</td>
+      <td class="mono"><input class="miniInp" data-prk="${escapeHtml(key)}" data-f="p" type="number" step="0.1" min="0" value="${pval}" placeholder="空=不做" style="width:110px;"></td>
+      <td class="mono"><input class="miniInp" data-prk="${escapeHtml(key)}" data-f="c" type="number" step="0.1" min="0" value="${cval}" placeholder="空=不做" style="width:110px;"></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll("input[data-prk]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const key = inp.getAttribute("data-prk");
+      const f = inp.getAttribute("data-f");
+      const t = $("cfgPriceTime").value;
+      const gid = $("cfgPriceGroup").value;
+      cfg.prices[t][gid] = cfg.prices[t][gid] || {};
+      cfg.prices[t][gid][key] = cfg.prices[t][gid][key] || {p:0,c:0};
+
+      const vraw = inp.value;
+      if(vraw===""){
+        // if both empty => delete
+        const otherF = (f==="p")?"c":"p";
+        const otherVal = tb.querySelector(`input[data-prk="${CSS.escape(key)}"][data-f="${otherF}"]`)?.value ?? "";
+        if(otherVal==="") delete cfg.prices[t][gid][key];
+        return;
+      }
+      const v = clampMoney(vraw);
+      cfg.prices[t][gid][key][f] = v;
+    });
+  });
+}
+
+function addCfgGroup(){
+  const used = new Set(cfg.groups.map(g=>String(g.id||"").toUpperCase()).filter(Boolean));
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  let nid = "A";
+  for(const L of letters){ if(!used.has(L)){ nid=L; break; } }
+  cfg.groups.push({id:nid,name:nid+"组",tables:0,cabinets:0,stations:0});
+  cfg.prices.weekday[nid] = cfg.prices.weekday[nid] || {};
+  cfg.prices.weekend[nid] = cfg.prices.weekend[nid] || {};
+  renderCfgGroups();
+  renderCfgPriceGroupSel();
+  renderCfgPriceTable();
+  renderCfgProjects();
+}
+function addCfgProject(){
+  const baseOrder = (cfg.projects.reduce((m,p)=>Math.max(m, Number(p.order||0)),0) || 0) + 1;
+  cfg.projects.push({key:"新项目"+baseOrder,type:"check",order:baseOrder});
+  renderCfgProjects();
+  renderCfgPriceTable();
+}
+function cfgFillZeros(){
+  const t = $("cfgPriceTime").value;
+  const gid = $("cfgPriceGroup").value;
+  if(!gid) return;
+  cfg.prices[t][gid] = cfg.prices[t][gid] || {};
+  cfg.projects.forEach(p=>{
+    if(p.type==="money_wage"||p.type==="money_tip") return;
+    if(!cfg.prices[t][gid][p.key]) cfg.prices[t][gid][p.key] = {p:0,c:0};
+  });
+  renderCfgPriceTable();
+}
+function applyBuilderToCfg(){
+  cfg.storeName = $("cfgStoreName").value.trim() || cfg.storeName || "";
+  cfg.weekendRule = {
+    fri: $("cfgWeekendFri").checked,
+    sat: $("cfgWeekendSat").checked,
+    sun: $("cfgWeekendSun").checked
+  };
+  // sanitize groups ids
+  cfg.groups = cfg.groups.map(g=>{
+    const id = String(g.id||"").trim();
+    return {
+      id:id,
+      name:String(g.name||id).trim(),
+      tables: clampInt(g.tables),
+      cabinets: clampInt(g.cabinets),
+      stations: clampInt(g.stations)
+    };
+  }).filter(g=>g.id);
+  // sanitize projects
+  cfg.projects = cfg.projects.map(p=>({
+    key:String(p.key||"").trim(),
+    type:String(p.type||"check").trim(),
+    order: clampInt(p.order||0),
+    notesByGroup: p.notesByGroup && typeof p.notesByGroup==="object" ? p.notesByGroup : undefined
+  })).filter(p=>p.key);
+  // clean prices for missing groups/projects
+  ["weekday","weekend"].forEach(t=>{
+    cfg.prices[t] = cfg.prices[t] || {};
+    Object.keys(cfg.prices[t]).forEach(gid=>{
+      if(!cfg.groups.find(g=>g.id===gid)) delete cfg.prices[t][gid];
+    });
+    cfg.groups.forEach(g=>{
+      cfg.prices[t][g.id] = cfg.prices[t][g.id] || {};
+      Object.keys(cfg.prices[t][g.id]).forEach(k=>{
+        if(!cfg.projects.find(p=>p.key===k)) delete cfg.prices[t][g.id][k];
+      });
+    });
+  });
+
+  saveCfg();
+  renderAll();
+  $("cfgInfo").textContent = "已应用配置生成器到当前网页。";
+}
+function exportBuilderCfg(){
+  applyBuilderToCfg();
+  exportCfg();
+}
+// ===== 配置生成器 END =====
+
+function init(){
+  $("date").value=new Date().toISOString().slice(0,10);
+  loadCfg();
+  loadRecords();
+  const savedTheme=localStorage.getItem(STORAGE_KEYS.theme)||"light";
+  applyTheme(savedTheme);
+  $("btnTheme").onclick=toggleTheme;
+
+  renderAll();
+
+  $("group").onchange=()=>{ renderProjects(); $("priceGroup").value=$("group").value; renderPriceTable(); };
+  $("timeType").onchange=()=>{ __timeTypeManuallyChanged=true; renderProjects(); $("priceTime").value=$("timeType").value; renderPriceTable(); };
+  $("date").onchange=()=>{ __timeTypeManuallyChanged=false; maybeApplyAutoTime(); renderProjects(); };
+  $("autoTime").onchange=()=>{ __timeTypeManuallyChanged=false; maybeApplyAutoTime(); renderProjects(); };
+
+  $("btnAdd").onclick=addRecord;
+  $("btnClear").onclick=clearData;
+  $("btnExport").onclick=exportCSV;
+
+  $("btnBatch").onclick=batchImport;
+  $("btnBatchExport").onclick=batchExport;
+
+  $("cfgFile").onchange=importCfgFile;
+  $("btnCfgExport").onclick=exportCfg;
+  $("btnCfgReset").onclick=resetCfg;
+
+  // builder
+  $("btnAddGroup").onclick = ()=>{ addCfgGroup(); };
+  $("btnAddProject").onclick = ()=>{ addCfgProject(); };
+  $("cfgPriceTime").onchange = ()=>{ renderCfgPriceTable(); };
+  $("cfgPriceGroup").onchange = ()=>{ renderCfgPriceTable(); };
+  $("btnCfgPriceFillZeros").onclick = ()=>{ cfgFillZeros(); };
+  $("btnApplyBuilder").onclick = ()=>{ applyBuilderToCfg(); };
+  $("btnExportBuilder").onclick = ()=>{ exportBuilderCfg(); };
+
+  // init builder fields from current cfg
+  syncBuilderFromCfg();
+
+  $("priceTime").onchange=renderPriceTable;
+  $("priceGroup").onchange=renderPriceTable;
+  $("btnPriceReset").onclick=resetPrices;
+}
+document.addEventListener("DOMContentLoaded", init, {once:true});
+</script>
+</body>
+</html>
