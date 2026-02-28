@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>加拿大海底捞八店 · 收尾计件</title>
+  <style>
+    :root{
+      --bg:#ffffff; --fg:#111; --muted:#666; --card:#fff; --border:#e6e6e6;
+      --btn:#111; --btnfg:#fff; --danger:#b00020;
+      --link:#0b57d0;
+      --font: 16px;
+      --radius:14px;
+      --shadow: 0 1px 0 rgba(0,0,0,0.03);
+    }
+    [data-theme="dark"]{
+      --bg:#0f1115; --fg:#f2f2f2; --muted:#a7a7a7; --card:#151923; --border:#2a2f3a;
+      --btn:#f2f2f2; --btnfg:#111; --danger:#ff4d6d;
+      --link:#7ab0ff;
+      --shadow: none;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:16px; background:var(--bg); color:var(--fg);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+      font-size: var(--font);
+      line-height:1.35;
+    }
+    a{color:var(--link)}
+    .topbar{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:12px; margin-bottom:12px;
+    }
+    .title{
+      font-weight:800; font-size:1.25rem;
+    }
+    .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .pill{border:1px solid var(--border); border-radius:999px; padding:6px 10px; display:flex; gap:10px; align-items:center; background:var(--card); box-shadow:var(--shadow)}
+    .pill button, .pill label{font-size:0.95rem}
+    button{
+      border:1px solid var(--border);
+      border-radius:12px; padding:10px 12px; background:var(--card); color:var(--fg);
+      cursor:pointer;
+    }
+    button.primary{background:var(--btn); color:var(--btnfg); border-color:var(--btn)}
+    button.danger{background:var(--danger); color:#fff; border-color:var(--danger)}
+    button:active{transform:translateY(1px)}
+    input, select, textarea{
+      border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+      background:var(--card); color:var(--fg); outline:none;
+      font-size:1rem;
+    }
+    label{display:flex; flex-direction:column; gap:6px; font-size:0.92rem}
+    .muted{color:var(--muted); font-size:0.9rem}
+    .layout{
+      display:grid; grid-template-columns: 1.15fr 0.85fr; gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 1020px){
+      .layout{grid-template-columns:1fr}
+    }
+    .card{
+      border:1px solid var(--border); background:var(--card);
+      border-radius:var(--radius); padding:14px; box-shadow:var(--shadow);
+    }
+    .card h3{margin:0 0 10px 0; font-size:1.05rem}
+    .grid4{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px}
+    @media (max-width: 900px){ .grid4{grid-template-columns: repeat(2,minmax(0,1fr))} }
+    @media (max-width: 520px){ .grid4{grid-template-columns: 1fr} }
+
+    .projects-grid{
+      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+    }
+    @media (max-width: 720px){ .projects-grid{grid-template-columns:1fr} }
+
+    .proj{
+      border:1px solid var(--border); border-radius:14px; padding:10px;
+      display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;
+    }
+    .proj .name{font-weight:700}
+    .proj .sub{color:var(--muted); font-size:0.88rem}
+    .proj .right{display:flex; gap:8px; align-items:center}
+    .proj input[type="number"]{width:90px}
+    .proj input[type="checkbox"]{width:18px; height:18px}
+    .extra{
+      display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end;
+      margin-top:10px;
+    }
+    table{width:100%; border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--border); padding:8px 6px; text-align:left; vertical-align:top}
+    th{background:rgba(0,0,0,0.03)}
+    [data-theme="dark"] th{background:rgba(255,255,255,0.04)}
+    .num{font-variant-numeric: tabular-nums; white-space:nowrap}
+    .btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    details summary{cursor:pointer; font-weight:700}
+    details .card{margin-top:10px}
+
+    .corner{
+      position:fixed; right:10px; bottom:10px;
+      font-size:12px; color:var(--muted); opacity:0.8;
+      user-select:none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="title" id="pageTitle">加拿大海底捞八店 · 收尾计件</div>
+
+    <div class="controls">
+      <div class="pill">
+        <label style="flex-direction:row;gap:8px;align-items:center;margin:0">
+          <input id="darkToggle" type="checkbox" />
+          夜间模式
+        </label>
+        <button id="fontDown" title="字体变小">A−</button>
+        <button id="fontUp" title="字体变大">A+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT -->
+    <div>
+      <!-- Block 1: header inputs -->
+      <div class="card">
+        <h3>录入</h3>
+        <div class="grid4">
+          <label>
+            日期
+            <input type="date" id="date" />
+          </label>
+
+          <label>
+            担当（组名）
+            <input type="text" id="group" placeholder="如 Beck" />
+          </label>
+
+          <label>
+            姓名（员工）
+            <input type="text" id="name" placeholder="如 Tom" />
+          </label>
+
+          <label>
+            时间类型
+            <select id="timeType">
+              <option value="周内">周内</option>
+              <option value="周末">周末</option>
+            </select>
+            
+          </label>
+        </div>
+      </div>
+
+      <!-- Block 2: projects -->
+      <div class="card" style="margin-top:14px">
+        <h3>项目</h3>
+
+        <div class="projects-grid" id="projectGrid"></div>
+
+        <div class="extra">
+          <label style="margin:0">
+            额外
+            <input type="number" id="extraMoney" placeholder="例如 12.5" step="0.01" />
+          </label>
+          
+        </div>
+
+        <div class="btnrow">
+          <button class="primary" id="addRecordBtn">添加记录</button>
+          <button class="danger" id="clearDataBtn">清除数据</button>
+          <button id="exportCsvBtn">导出CSV</button>
+        </div>
+      </div>
+
+      <!-- Personal import summary -->
+      <div class="card" style="margin-top:14px">
+        <h3>个人当期总工资</h3>
+        <div class="row" style="margin-bottom:10px">
+          <input type="file" id="csvFiles" accept=".csv,text/csv" multiple />
+          <button class="primary" id="importAndSumBtn">导入汇总</button>
+          <button id="exportPeopleBtn">导出个人汇总CSV</button>
+        </div>
+        
+        <div id="peopleTable"></div>
+      </div>
+
+      <!-- Store config (collapsed) -->
+      <details style="margin-top:14px" id="storeConfigDetails">
+        <summary>门店配置（点击展开/收起）</summary>
+
+        <div class="card">
+          <div class="muted" style="margin-bottom:10px">
+            可修改门店名、增删项目、修改周内/周末“用时（分钟）”来自动更新单价；可导出JSON给其他门店导入。
+          </div>
+
+          <div class="grid4">
+            <label>
+              门店名称（用于标题“门店名 · 收尾计件”）
+              <input type="text" id="cfgStoreName" />
+            </label>
+
+            <label>
+              时薪（默认25，可改）
+              <input type="number" id="cfgHourly" step="0.01" />
+            </label>
+
+            <label>
+              工资占比（默认68%）
+              <input type="number" id="cfgWagePct" step="0.01" />
+            </label>
+
+            <label>
+              小费占比（默认32%）
+              <input type="number" id="cfgTipPct" step="0.01" />
+            </label>
+          </div>
+
+          <div style="margin-top:12px" class="row">
+            <button id="cfgAddProject">+ 添加项目</button>
+            <button id="cfgExportJson">导出配置JSON</button>
+            <label class="pill" style="gap:8px; padding:8px 10px">
+              导入JSON
+              <input type="file" id="cfgImportJson" accept=".json,application/json" style="border:none;padding:0" />
+            </label>
+            <button class="primary" id="cfgApply">应用到当前网页</button>
+            <button class="danger" id="cfgRestoreDefault">恢复默认门店</button>
+          </div>
+
+          <div style="margin-top:12px" id="cfgProjectEditor"></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+      <div class="card">
+        <h3>汇总</h3>
+        <div class="muted" style="margin-bottom:10px">
+          
+        </div>
+        <div id="summaryTable"></div>
+
+        <div style="margin-top:12px">
+          <div class="muted" style="margin-bottom:6px;font-weight:700">当日合计（按当前选择的日期）</div>
+          <div id="dailyTotals"></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="muted" style="margin-bottom:6px;font-weight:700">各担当组汇总（按当前选择的日期）</div>
+          <div id="groupTotals"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="corner">Haoshen Cai</div>
+
+<script>
+const DEFAULT_CONFIG = {
+  storeName: "加拿大海底捞八店",
+  hourly: 25,
+  wagePct: 0.68,
+  tipPct: 0.32,
+  projects: [
+    { name:"踢脚线/沙发缝/抬电磁炉", type:"计件", weekdayMins:2.5, weekendMins:2.5 },
+    { name:"擦工作柜+打印机柜+柜体", type:"计件", weekdayMins:3, weekendMins:3 },
+    { name:"1号保洁柜墙面", type:"勾选", weekdayMins:5, weekendMins:5 },
+    { name:"包间墙面", type:"勾选", weekdayMins:8, weekendMins:10 },
+    { name:"63对面墙面", type:"勾选", weekdayMins:5, weekendMins:5 },
+    { name:"擦水柜/冰桶/冰箱（倒垃圾和清围裙）", type:"计件", weekdayMins:8, weekendMins:10 },
+    { name:"补细节", type:"计件", weekdayMins:0.75, weekendMins:1.25 },
+    { name:"补杯子", type:"计件", weekdayMins:0.75, weekendMins:1.25 },
+    { name:"补筷子/小碗/碟子/勺子", type:"计件", weekdayMins:1, weekendMins:1.75 },
+    { name:"擦Ipad和充电，擦账单夹", type:"计件", weekdayMins:0.8, weekendMins:0.8 },
+    { name:"擦料台", type:"计件", weekdayMins:25, weekendMins:25 },
+    { name:"擦大桌菜架", type:"计件", weekdayMins:1, weekendMins:1 },
+    { name:"宝宝椅清洁", type:"勾选", weekdayMins:6, weekendMins:10 },
+    { name:"补冰淇淋+生日车清洁+生日柜整理+墙面+灯牌充电", type:"勾选", weekdayMins:25, weekendMins:35 },
+    { name:"滤网清洁", type:"计件", weekdayMins:0.65, weekendMins:0.65 },
+    { name:"补高柜", type:"勾选", weekdayMins:15, weekendMins:25 },
+    { name:"补饮料柜", type:"勾选", weekdayMins:30, weekendMins:30 },
+  ]
+};
+
+const KEYS = {
+  history: "ca8_piecework_history_v2",
+  config:  "ca8_piecework_config_v2",
+  theme:   "ca8_piecework_theme",
+  font:    "ca8_piecework_font"
+};
+
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+function formatGroup(name){
+  const s = (name || "").trim();
+  if(!s) return "";
+  return s.endsWith("组") ? s : (s + "组");
+}
+function autoTimeType(dateStr){
+  const d = new Date(dateStr);
+  if(Number.isNaN(d.getTime())) return "周内";
+  const day = d.getDay();
+  return (day >= 1 && day <= 4) ? "周内" : "周末";
+}
+function round2(n){ return Math.round((n + Number.EPSILON) * 100) / 100; }
+function priceFromMins(mins, hourly){
+  const v = (Number(mins) || 0) / 60 * (Number(hourly) || 0);
+  return round2(v);
+}
+function splitWageTip(total, wagePct, tipPct){
+  const wage = round2(total * wagePct);
+  const tip  = round2(total * tipPct);
+  return { wage, tip };
+}
+function shortProjectName(full){
+  if(!full) return "";
+  let s = String(full).trim();
+  const cut1 = s.split("/")[0].trim();
+  s = cut1 || s;
+  const idxHe = s.indexOf("和");
+  if(idxHe > 0) s = s.slice(0, idxHe).trim();
+  s = s.split("（")[0].split("(")[0].trim();
+  if(s.length > 6) s = s.slice(0,6);
+  return s;
+}
+function csvEscape(v){
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+}
+function toCSV(rows){
+  if(!rows.length) return "";
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.map(csvEscape).join(",")];
+  for(const r of rows){ lines.push(headers.map(h => csvEscape(r[h])).join(",")); }
+  return lines.join("\n");
+}
+function downloadText(filename, text){
+  const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+let config = loadConfig();
+let history = loadHistory();
+
+function loadConfig(){
+  try{
+    const raw = localStorage.getItem(KEYS.config);
+    if(!raw) return deepClone(DEFAULT_CONFIG);
+    const parsed = JSON.parse(raw);
+    return { ...deepClone(DEFAULT_CONFIG), ...parsed };
+  }catch{
+    return deepClone(DEFAULT_CONFIG);
+  }
+}
+function saveConfig(){ localStorage.setItem(KEYS.config, JSON.stringify(config)); }
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(KEYS.history) || "[]"); }
+  catch{ return []; }
+}
+function saveHistory(){ localStorage.setItem(KEYS.history, JSON.stringify(history)); }
+
+function getProjectsPriced(){
+  return config.projects.map(p => {
+    const weekdayPrice = priceFromMins(p.weekdayMins, config.hourly);
+    const weekendPrice = priceFromMins(p.weekendMins, config.hourly);
+    return { ...p, weekdayPrice, weekendPrice };
+  });
+}
+function getPrice(p, timeType){ return timeType === "周内" ? p.weekdayPrice : p.weekendPrice; }
+
+function applyTitle(){
+  const t = `${config.storeName} · 收尾计件`;
+  document.title = t;
+  document.getElementById("pageTitle").textContent = t;
+}
+function initDate(){
+  const el = document.getElementById("date");
+  const now = new Date();
+  const ds = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  el.value = ds;
+  document.getElementById("timeType").value = autoTimeType(ds);
+}
+function setTheme(isDark){
+  document.documentElement.dataset.theme = isDark ? "dark" : "light";
+  document.getElementById("darkToggle").checked = isDark;
+  localStorage.setItem(KEYS.theme, isDark ? "dark" : "light");
+}
+function loadTheme(){
+  const t = localStorage.getItem(KEYS.theme) || "light";
+  setTheme(t === "dark");
+}
+function setFont(px){
+  const v = Math.max(14, Math.min(22, px));
+  document.documentElement.style.setProperty("--font", v + "px");
+  localStorage.setItem(KEYS.font, String(v));
+}
+function loadFont(){
+  const raw = localStorage.getItem(KEYS.font);
+  setFont(raw ? Number(raw) : 16);
+}
+
+function renderProjects(){
+  const grid = document.getElementById("projectGrid");
+  grid.innerHTML = "";
+  const timeType = document.getElementById("timeType").value;
+  const ps = getProjectsPriced();
+
+  ps.forEach((p, idx) => {
+    const price = getPrice(p, timeType);
+    const box = document.createElement("div");
+    box.className = "proj";
+
+    const left = document.createElement("div");
+    left.innerHTML = `
+      <div class="name">${p.name}</div>
+      <div class="sub">单价：<span class="num">${price.toFixed(2)}</span></div>
+    `;
+
+    const right = document.createElement("div");
+    right.className = "right";
+
+    if(p.type === "勾选"){
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.dataset.idx = idx;
+      cb.className = "projCheck";
+      right.appendChild(cb);
+    }else{
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "1";
+      input.value = "";
+      input.dataset.idx = idx;
+      input.className = "projQty";
+      right.appendChild(input);
+    }
+
+    box.appendChild(left);
+    box.appendChild(right);
+    grid.appendChild(box);
+  });
+}
+
+function getCurrentRecordCalc(){
+  const date = document.getElementById("date").value;
+  const groupRaw = document.getElementById("group").value.trim();
+  const name = document.getElementById("name").value.trim();
+  const timeType = document.getElementById("timeType").value;
+  const extra = Number(document.getElementById("extraMoney").value || 0);
+
+  const ps = getProjectsPriced();
+  const items = [];
+  let total = 0;
+
+  document.querySelectorAll(".projCheck").forEach(el => {
+    const idx = Number(el.dataset.idx);
+    const p = ps[idx];
+    const checked = el.checked;
+    const price = getPrice(p, timeType);
+    const sub = checked ? price : 0;
+    if(sub !== 0){
+      items.push({ name:p.name, short:shortProjectName(p.name), type:p.type, qty:1, price, subtotal:round2(sub) });
+      total += sub;
+    }
+  });
+
+  document.querySelectorAll(".projQty").forEach(el => {
+    const idx = Number(el.dataset.idx);
+    const p = ps[idx];
+    const qty = Number(el.value || 0);
+    if(!qty) return;
+    const price = getPrice(p, timeType);
+    const sub = qty * price;
+    items.push({ name:p.name, short:shortProjectName(p.name), type:p.type, qty, price, subtotal:round2(sub) });
+    total += sub;
+  });
+
+  if(extra){
+    items.push({ name:"额外", short:"额外", type:"额外", qty:1, price:round2(extra), subtotal:round2(extra) });
+    total += extra;
+  }
+
+  total = round2(total);
+  const { wage, tip } = splitWageTip(total, config.wagePct, config.tipPct);
+
+  return { date, timeType, groupRaw, groupDisplay: formatGroup(groupRaw), name, items, total, wage, tip };
+}
+
+function clearProjectInputsOnly(){
+  document.querySelectorAll(".projQty").forEach(i => i.value = "");
+  document.querySelectorAll(".projCheck").forEach(c => c.checked = false);
+  document.getElementById("extraMoney").value = "";
+}
+
+function renderSummary(){
+  const box = document.getElementById("summaryTable");
+  if(history.length === 0){
+    box.innerHTML = `<div class="muted">暂无记录</div>`;
+  }else{
+    const t = document.createElement("table");
+    t.innerHTML = `
+      <thead>
+        <tr>
+          <th>日期</th><th>担当</th><th>姓名</th>
+          <th class="num">工资</th><th class="num">小费</th><th>明细</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tb = t.querySelector("tbody");
+
+    history.forEach((r, i) => {
+      const detail = (r.items || []).map(it => {
+        if(it.type === "计件") return `${it.qty}${it.short}`;
+        if(it.type === "勾选") return `${it.short}`;
+        if(it.type === "额外") return `额外${Number(it.subtotal).toFixed(2)}`;
+        return it.short;
+      }).join("，");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.date}</td>
+        <td>${r.groupDisplay}</td>
+        <td>${r.name}</td>
+        <td class="num">${Number(r.wage).toFixed(2)}</td>
+        <td class="num">${Number(r.tip).toFixed(2)}</td>
+        <td>${detail || ""}</td>
+        <td><button data-del="${i}" style="padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;">×</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+
+    box.innerHTML = "";
+    box.appendChild(t);
+
+    // 删除单条记录
+    box.querySelectorAll("button[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.dataset.del);
+        if (Number.isNaN(idx)) return;
+        history.splice(idx, 1);
+        saveHistory();
+        renderSummary();
+      });
+    });
+  }
+  renderDailyTotals();
+  renderGroupTotals();
+}
+
+function getSelectedDate(){ return document.getElementById("date").value; }
+
+function renderDailyTotals(){
+  const date = getSelectedDate();
+  const rows = history.filter(r => r.date === date);
+  const wage = round2(rows.reduce((s,r)=>s+Number(r.wage||0),0));
+  const tip  = round2(rows.reduce((s,r)=>s+Number(r.tip||0),0));
+  const total = round2(wage + tip);
+
+  document.getElementById("dailyTotals").innerHTML = `
+    <table><tbody>
+      <tr><td>工资</td><td class="num">${wage.toFixed(2)}</td></tr>
+      <tr><td>小费</td><td class="num">${tip.toFixed(2)}</td></tr>
+      <tr><td>合计（工资+小费）</td><td class="num">${total.toFixed(2)}</td></tr>
+    </tbody></table>
+  `;
+}
+
+function renderGroupTotals(){
+  const date = getSelectedDate();
+  const rows = history.filter(r => r.date === date);
+
+  const map = new Map();
+  for(const r of rows){
+    const key = r.groupDisplay || r.groupRaw || "";
+    if(!map.has(key)) map.set(key, { group:key, wage:0, tip:0 });
+    const g = map.get(key);
+    g.wage += Number(r.wage||0);
+    g.tip  += Number(r.tip||0);
+  }
+  const arr = Array.from(map.values()).map(x => ({...x, wage:round2(x.wage), tip:round2(x.tip)}))
+    .sort((a,b)=> (b.wage+b.tip) - (a.wage+a.tip));
+
+  const box = document.getElementById("groupTotals");
+  if(arr.length === 0){ box.innerHTML = `<div class="muted">暂无</div>`; return; }
+
+  const t = document.createElement("table");
+  t.innerHTML = `<thead><tr><th>担当</th><th class="num">工资</th><th class="num">小费</th></tr></thead><tbody></tbody>`;
+  const tb = t.querySelector("tbody");
+  for(const g of arr){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${g.group}</td><td class="num">${g.wage.toFixed(2)}</td><td class="num">${g.tip.toFixed(2)}</td>`;
+    tb.appendChild(tr);
+  }
+  box.innerHTML = "";
+  box.appendChild(t);
+}
+
+function addRecord(){
+  const calc = getCurrentRecordCalc();
+  if(!calc.date) return alert("请先选择日期");
+  if(!calc.groupRaw) return alert("请填写担当（组名）");
+  if(!calc.name) return alert("请填写姓名");
+  if(calc.items.length === 0) return alert("本次没有选择任何项目/数量，也没有填写额外金额");
+
+  const record = {
+    id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+    date: calc.date,
+    timeType: calc.timeType,
+    groupRaw: calc.groupRaw,
+    groupDisplay: calc.groupDisplay,
+    name: calc.name,
+    wage: calc.wage,
+    tip: calc.tip,
+    total: calc.total,
+    items: calc.items,
+    createdAt: new Date().toISOString()
+  };
+
+  history.unshift(record);
+  saveHistory();
+  clearProjectInputsOnly();
+  renderSummary();
+}
+
+function clearAllData(){
+  if(!confirm("确定清除所有历史数据吗？")) return;
+  history = [];
+  saveHistory();
+  renderSummary();
+}
+
+function exportMainCSV(){
+  if(history.length === 0) return alert("暂无历史记录可导出");
+
+  const recordRows = history.map(r => ({
+    日期: r.date,
+    担当: r.groupDisplay,
+    姓名: r.name,
+    时间类型: r.timeType,
+    工资: Number(r.wage).toFixed(2),
+    小费: Number(r.tip).toFixed(2),
+    合计: Number(r.total).toFixed(2),
+    明细: (r.items || []).map(it => {
+      if(it.type === "计件") return `${it.qty}${it.short}`;
+      if(it.type === "勾选") return `${it.short}`;
+      if(it.type === "额外") return `额外${Number(it.subtotal).toFixed(2)}`;
+      return it.short;
+    }).join("，")
+  }));
+
+  const byDate = new Map();
+  for(const r of history){
+    if(!byDate.has(r.date)) byDate.set(r.date, { date:r.date, wage:0, tip:0, total:0 });
+    const d = byDate.get(r.date);
+    d.wage += Number(r.wage||0);
+    d.tip  += Number(r.tip||0);
+    d.total += Number(r.total||0);
+  }
+  const dailyRows = Array.from(byDate.values()).map(d => ({
+    日期: d.date,
+    当日工资: round2(d.wage).toFixed(2),
+    当日小费: round2(d.tip).toFixed(2),
+    当日合计: round2(d.total).toFixed(2)
+  })).sort((a,b)=> a.日期.localeCompare(b.日期));
+
+  const byDateGroup = new Map();
+  for(const r of history){
+    const key = `${r.date}__${r.groupDisplay}`;
+    if(!byDateGroup.has(key)) byDateGroup.set(key, { 日期:r.date, 担当:r.groupDisplay, 工资:0, 小费:0, 合计:0 });
+    const g = byDateGroup.get(key);
+    g.工资 += Number(r.wage||0);
+    g.小费 += Number(r.tip||0);
+    g.合计 += Number(r.total||0);
+  }
+  const groupDailyRows = Array.from(byDateGroup.values()).map(x => ({
+    日期: x.日期,
+    担当: x.担当,
+    工资: round2(x.工资).toFixed(2),
+    小费: round2(x.小费).toFixed(2),
+    合计: round2(x.合计).toFixed(2)
+  })).sort((a,b)=> (a.日期===b.日期 ? a.担当.localeCompare(b.担当) : a.日期.localeCompare(b.日期)));
+
+  const stamp = new Date().toISOString().slice(0,10);
+  const parts = [];
+  parts.push("【记录明细】");
+  parts.push(toCSV(recordRows));
+  parts.push("");
+  parts.push("【当日合计】");
+  parts.push(toCSV(dailyRows));
+  parts.push("");
+  parts.push("【每日各担当组汇总】");
+  parts.push(toCSV(groupDailyRows));
+
+  downloadText(`CA8_收尾计件_汇总_${stamp}.csv`, parts.join("\n"));
+}
+
+let importedPeople = [];
+let importedGroupDaily = [];
+
+function normalizeName(n){ return String(n||"").trim().toLowerCase(); }
+
+function parseCSV(text){
+  const rows = [];
+  let i=0, field="", row=[], inQuotes=false;
+  while(i < text.length){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i+=2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      field += c; i++; continue;
+    }else{
+      if(c === '"'){ inQuotes = true; i++; continue; }
+      if(c === ','){ row.push(field); field=""; i++; continue; }
+      if(c === '\n'){
+        row.push(field); field="";
+        if(row.some(v=>String(v).trim()!=="")) rows.push(row);
+        row = []; i++; continue;
+      }
+      if(c === '\r'){ i++; continue; }
+      field += c; i++; continue;
+    }
+  }
+  row.push(field);
+  if(row.some(v=>String(v).trim()!=="")) rows.push(row);
+  return rows;
+}
+function csvToObjects(text){
+  const rows = parseCSV(text);
+  if(rows.length < 2) return [];
+  const header = rows[0];
+  const objs = [];
+  for(let r=1;r<rows.length;r++){
+    const obj = {};
+    for(let c=0;c<header.length;c++){
+      obj[header[c]] = rows[r][c] ?? "";
+    }
+    objs.push(obj);
+  }
+  return objs;
+}
+
+async function importAndSummarize(){
+  const files = document.getElementById("csvFiles").files;
+  if(!files || files.length === 0) return alert("请先选择CSV文件（可多选）");
+
+  const allRecordObjs = [];
+  const allGroupDailyObjs = [];
+
+  for(const f of files){
+    const text = await f.text();
+    const lines = text.split(/\n/);
+
+    const idxRecords = lines.findIndex(l => l.includes("【记录明细】"));
+    const idxDaily   = lines.findIndex(l => l.includes("【当日合计】"));
+    const idxGroupD  = lines.findIndex(l => l.includes("【每日各担当组汇总】"));
+    if(idxRecords === -1) continue;
+
+    const segRecords = lines.slice(idxRecords+1, (idxDaily===-1?lines.length:idxDaily)).join("\n").trim();
+    if(segRecords) allRecordObjs.push(...csvToObjects(segRecords));
+
+    if(idxGroupD !== -1){
+      const segGroupD = lines.slice(idxGroupD+1).join("\n").trim();
+      if(segGroupD) allGroupDailyObjs.push(...csvToObjects(segGroupD));
+    }
+  }
+
+  const map = new Map();
+  for(const r of allRecordObjs){
+    const rawName = r["姓名"] ?? "";
+    const key = normalizeName(rawName);
+    if(!key) continue;
+    if(!map.has(key)) map.set(key, { displayName: rawName.trim(), wage:0, tip:0, total:0 });
+    const x = map.get(key);
+    x.wage += Number(r["工资"] || 0);
+    x.tip  += Number(r["小费"] || 0);
+    x.total += Number(r["合计"] || 0);
+  }
+  importedPeople = Array.from(map.values()).map(x => ({
+    name: x.displayName,
+    wage: round2(x.wage),
+    tip: round2(x.tip),
+    total: round2(x.total)
+  })).sort((a,b)=> b.total - a.total);
+
+  importedGroupDaily = allGroupDailyObjs
+    .map(x => ({
+      date: (x["日期"] || "").trim(),
+      group: (x["担当"] || "").trim(),
+      wage: round2(Number(x["工资"] || 0)),
+      tip: round2(Number(x["小费"] || 0)),
+      total: round2(Number(x["合计"] || 0)),
+    }))
+    .filter(x => x.date && x.group)
+    .sort((a,b)=> (a.date===b.date ? a.group.localeCompare(b.group) : a.date.localeCompare(b.date)));
+
+  renderPeopleTable();
+}
+
+function renderPeopleTable(){
+  const box = document.getElementById("peopleTable");
+  if(importedPeople.length === 0){
+    box.innerHTML = `<div class="muted">尚未导入或没有可汇总的数据</div>`;
+    return;
+  }
+
+  const totalW = round2(importedPeople.reduce((s,x)=>s+x.wage,0));
+  const totalT = round2(importedPeople.reduce((s,x)=>s+x.tip,0));
+  const totalAll = round2(totalW + totalT);
+
+  const t = document.createElement("table");
+  t.innerHTML = `
+    <thead>
+      <tr><th>姓名</th><th class="num">总工资</th><th class="num">总小费</th><th class="num">合计</th></tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tb = t.querySelector("tbody");
+  for(const p of importedPeople){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${p.name}</td><td class="num">${p.wage.toFixed(2)}</td><td class="num">${p.tip.toFixed(2)}</td><td class="num">${p.total.toFixed(2)}</td>`;
+    tb.appendChild(tr);
+  }
+  const trSum = document.createElement("tr");
+  trSum.innerHTML = `<td><b>合计</b></td><td class="num"><b>${totalW.toFixed(2)}</b></td><td class="num"><b>${totalT.toFixed(2)}</b></td><td class="num"><b>${totalAll.toFixed(2)}</b></td>`;
+  tb.appendChild(trSum);
+
+  box.innerHTML = "";
+  box.appendChild(t);
+
+  if(importedGroupDaily.length){
+    const div = document.createElement("div");
+    div.style.marginTop = "10px";
+    div.innerHTML = `<div class="muted" style="font-weight:700;margin-bottom:6px">每日各担当组工资/小费总计（来自导入CSV）</div>`;
+    const t2 = document.createElement("table");
+    t2.innerHTML = `<thead><tr><th>日期</th><th>担当</th><th class="num">工资</th><th class="num">小费</th><th class="num">合计</th></tr></thead><tbody></tbody>`;
+    const tb2 = t2.querySelector("tbody");
+    importedGroupDaily.forEach(g=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${g.date}</td><td>${g.group}</td><td class="num">${g.wage.toFixed(2)}</td><td class="num">${g.tip.toFixed(2)}</td><td class="num">${g.total.toFixed(2)}</td>`;
+      tb2.appendChild(tr);
+    });
+    div.appendChild(t2);
+    box.appendChild(div);
+  }
+}
+
+function exportPeopleCSV(){
+  if(importedPeople.length === 0) return alert("请先选择CSV并导入汇总");
+
+  const rowsPeople = importedPeople.map(p => ({
+    姓名: p.name,
+    总工资: p.wage.toFixed(2),
+    总小费: p.tip.toFixed(2),
+    合计: p.total.toFixed(2)
+  }));
+
+  const totalW = round2(importedPeople.reduce((s,x)=>s+x.wage,0));
+  const totalT = round2(importedPeople.reduce((s,x)=>s+x.tip,0));
+  const totalAll = round2(totalW + totalT);
+
+  rowsPeople.push({ 姓名:"合计", 总工资:totalW.toFixed(2), 总小费:totalT.toFixed(2), 合计:totalAll.toFixed(2) });
+
+  const parts = [];
+  parts.push("【个人汇总】");
+  parts.push(toCSV(rowsPeople));
+
+  if(importedGroupDaily.length){
+    parts.push("");
+    parts.push("【每日各担当组工资小费总计】");
+    const rowsGD = importedGroupDaily.map(g=>({
+      日期:g.date, 担当:g.group,
+      工资:g.wage.toFixed(2), 小费:g.tip.toFixed(2), 合计:g.total.toFixed(2)
+    }));
+    parts.push(toCSV(rowsGD));
+  }
+
+  const stamp = new Date().toISOString().slice(0,10);
+  downloadText(`CA8_个人汇总_${stamp}.csv`, parts.join("\n"));
+}
+
+function renderConfigUI(){
+  document.getElementById("cfgStoreName").value = config.storeName;
+  document.getElementById("cfgHourly").value = config.hourly;
+  document.getElementById("cfgWagePct").value = config.wagePct;
+  document.getElementById("cfgTipPct").value = config.tipPct;
+
+  const box = document.getElementById("cfgProjectEditor");
+  box.innerHTML = "";
+
+  const ps = config.projects;
+  const t = document.createElement("table");
+  t.innerHTML = `
+    <thead>
+      <tr>
+        <th style="width:40px">顺序</th>
+        <th>项目名称</th>
+        <th style="width:90px">类型</th>
+        <th class="num" style="width:110px">周内用时(分)</th>
+        <th class="num" style="width:110px">周末用时(分)</th>
+        <th style="width:80px">操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tb = t.querySelector("tbody");
+
+  ps.forEach((p, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="num">${idx+1}</td>
+      <td><input data-k="name" data-idx="${idx}" value="${p.name.replaceAll('"','&quot;')}" /></td>
+      <td>
+        <select data-k="type" data-idx="${idx}">
+          <option value="计件" ${p.type==="计件"?"selected":""}>计件</option>
+          <option value="勾选" ${p.type==="勾选"?"selected":""}>勾选</option>
+        </select>
+      </td>
+      <td><input type="number" step="0.01" data-k="weekdayMins" data-idx="${idx}" value="${p.weekdayMins}" /></td>
+      <td><input type="number" step="0.01" data-k="weekendMins" data-idx="${idx}" value="${p.weekendMins}" /></td>
+      <td><button class="danger" data-del="${idx}">删除</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  box.appendChild(t);
+
+  box.querySelectorAll("input[data-k],select[data-k]").forEach(el => {
+    el.addEventListener("change", () => {
+      const idx = Number(el.dataset.idx);
+      const k = el.dataset.k;
+      let v = el.value;
+      if(k === "weekdayMins" || k === "weekendMins") v = Number(v || 0);
+      ps[idx][k] = v;
+    });
+  });
+
+  box.querySelectorAll("button[data-del]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.del);
+      config.projects.splice(idx, 1);
+      renderConfigUI();
+    });
+  });
+}
+
+function applyConfigFromUI(){
+  config.storeName = document.getElementById("cfgStoreName").value.trim() || DEFAULT_CONFIG.storeName;
+  config.hourly = Number(document.getElementById("cfgHourly").value || DEFAULT_CONFIG.hourly);
+  config.wagePct = Number(document.getElementById("cfgWagePct").value || DEFAULT_CONFIG.wagePct);
+  config.tipPct = Number(document.getElementById("cfgTipPct").value || DEFAULT_CONFIG.tipPct);
+  if(config.wagePct < 0) config.wagePct = 0;
+  if(config.tipPct < 0) config.tipPct = 0;
+
+  saveConfig();
+  applyTitle();
+  renderProjects();
+  renderSummary();
+}
+
+function bindEvents(){
+  document.getElementById("date").addEventListener("change", (e) => {
+    const tt = autoTimeType(e.target.value);
+    document.getElementById("timeType").value = tt;
+    renderProjects();
+    renderSummary();
+  });
+
+  document.getElementById("timeType").addEventListener("change", () => {
+    renderProjects();
+  });
+
+  document.getElementById("darkToggle").addEventListener("change", (e) => setTheme(e.target.checked));
+
+  document.getElementById("fontUp").addEventListener("click", () => {
+    const cur = Number(localStorage.getItem(KEYS.font) || 16);
+    setFont(cur + 1);
+  });
+  document.getElementById("fontDown").addEventListener("click", () => {
+    const cur = Number(localStorage.getItem(KEYS.font) || 16);
+    setFont(cur - 1);
+  });
+
+  document.getElementById("addRecordBtn").addEventListener("click", addRecord);
+  document.getElementById("clearDataBtn").addEventListener("click", clearAllData);
+  document.getElementById("exportCsvBtn").addEventListener("click", exportMainCSV);
+
+  document.getElementById("importAndSumBtn").addEventListener("click", importAndSummarize);
+  document.getElementById("exportPeopleBtn").addEventListener("click", exportPeopleCSV);
+
+  document.getElementById("cfgAddProject").addEventListener("click", () => {
+    config.projects.push({ name:"新项目", type:"计件", weekdayMins:1, weekendMins:1 });
+    renderConfigUI();
+  });
+
+  document.getElementById("cfgExportJson").addEventListener("click", () => {
+    const payload = {
+      storeName: config.storeName,
+      hourly: config.hourly,
+      wagePct: config.wagePct,
+      tipPct: config.tipPct,
+      projects: config.projects
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${config.storeName}_收尾计件配置.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("cfgImportJson").addEventListener("change", async (e) => {
+    const f = e.target.files?.[0];
+    if(!f) return;
+    try{
+      const text = await f.text();
+      const obj = JSON.parse(text);
+      config = { ...config, ...obj };
+      if(!Array.isArray(config.projects)) config.projects = deepClone(DEFAULT_CONFIG.projects);
+      renderConfigUI();
+      alert("已导入JSON（请点击“应用到当前网页”生效）");
+    }catch{
+      alert("JSON解析失败");
+    }finally{
+      e.target.value = "";
+    }
+  });
+
+  document.getElementById("cfgApply").addEventListener("click", () => {
+    applyConfigFromUI();
+    alert("已应用到当前网页");
+  });
+
+  document.getElementById("cfgRestoreDefault").addEventListener("click", () => {
+    if(!confirm("确定恢复默认门店配置吗？（不会清空历史数据）")) return;
+    config = deepClone(DEFAULT_CONFIG);
+    saveConfig();
+    applyTitle();
+    renderConfigUI();
+    renderProjects();
+    renderSummary();
+  });
+}
+
+(function init(){
+  loadTheme();
+  loadFont();
+  applyTitle();
+  initDate();
+  renderProjects();
+  renderSummary();
+  renderConfigUI();
+  bindEvents();
+})();
+</script>
+</body>
+</html>
